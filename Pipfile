@@ -1,0 +1,35 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+pylint = "*"
+rope = "*"
+autopep8 = "*"
+
+[packages]
+psutil = "*"
+ray = "*"
+setproctitle = "*"
+boto = "*"
+pandas = "*"
+plotly = "*"
+pysam = "*"
+numpy = "==1.17.3"
+tqdm = "*"
+jupyterlab = "*"
+bitarray = "*"
+bsddb3 = "*"
+biopython = "*"
+pymongo = "*"
+sklearn = "*"
+matplotlib = "*"
+ncbi-genome-download = "*"
+idbd-bio-utils = {editable = true,path = "./../idbd-bio-utils"}
+aiohttp = "*"
+grpcio = "*"
+redis = "*"
+
+[requires]
+python_version = "3.7"

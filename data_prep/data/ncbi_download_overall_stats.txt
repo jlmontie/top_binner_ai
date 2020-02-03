@@ -1,0 +1,16 @@
+Organism class stats:
+bacteria        87753
+virus            9363
+fungus            265
+parasite           81
+unclassified       11
+Name: org_class, dtype: int64
+
+Species with single reference:
+22093
+Species with multiple references:
+2752
+Missing species taxids:
+0
+Duplicate accessions:
+79
