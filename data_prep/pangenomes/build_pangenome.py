@@ -9,7 +9,7 @@ from multiprocessing import Pool
 
 import pandas as pd
 import pysam
-
+import ray
 
 class pangenome:
 
@@ -134,8 +134,8 @@ class pangenome:
             print(f"\nTaxid {self._taxid}, query {os.path.basename(query)} complete. Taxid {100 * (idx + 1) / len(self._query_list):0.2f}% complete.\n")
         self._cleanup()
 
-
-def build_pangenome(group, pangenome_dir=None, skip_done=True,
+@ray.remote
+def build_pangenome(group, pangenome_dir=None, overwrite_done=False,
         skip_inprogress=False):
     taxid = group[0]
     group_df = group[1]
@@ -145,7 +145,7 @@ def build_pangenome(group, pangenome_dir=None, skip_done=True,
         return
     if not len(fasta_list) > 1:
         return
-    if skip_done:
+    if not overwrite_done:
         done_file = os.path.join(pangenome_dir, 'tmp', str(taxid)) + '.done'
         if os.path.isfile(done_file):
             print(f"Taxid {taxid} complete. Skipping.")
@@ -170,13 +170,13 @@ if __name__ == '__main__':
         'pangenomes and temporary files.'))
     parser.add_argument('threads', type=int,
         help='Parallel processing threads.')
-    parser.add_argument('--skip_done', action="store_true", default=False)
-    parser.add_argument('--skip_inprogress', action="store_true",
-        default=False)
+    parser.add_argument('--overwrite_done', action="store_true")
+    parser.add_argument('--skip_inprogress', action="store_true")
     args = parser.parse_args()
+    ray.init(num_cpus=args.threads, memory=25428800000)
     metadata = pd.read_csv(args.metadata_file, sep='\t')
     meta_group = metadata.groupby('species_taxid')
-    p = Pool(args.threads)
-    p.map(partial(build_pangenome, pangenome_dir=args.pangenome_dir,
-        skip_done=args.skip_done, skip_inprogress=args.skip_inprogress),
-        meta_group)
+    for group in meta_group:
+        build_pangenome.remote(group, pangenome_dir=args.pangenome_dir,
+            overwrite_done=args.overwrite_done,
+            skip_inprogress=args.skip_inprogress)
