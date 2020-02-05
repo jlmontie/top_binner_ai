@@ -135,7 +135,8 @@ class pangenome:
         self._cleanup()
 
 
-def build_pangenome(group, pangenome_dir=None, skip_existing=True):
+def build_pangenome(group, pangenome_dir=None, skip_done=True,
+        skip_inprogress=False):
     taxid = group[0]
     group_df = group[1]
     group_df = group_df.sort_values(['genome_size'], ascending=False)
@@ -144,10 +145,15 @@ def build_pangenome(group, pangenome_dir=None, skip_existing=True):
         return
     if not len(fasta_list) > 1:
         return
-    if skip_existing:
+    if skip_done:
         done_file = os.path.join(pangenome_dir, 'tmp', str(taxid)) + '.done'
         if os.path.isfile(done_file):
             print(f"Taxid {taxid} complete. Skipping.")
+            return
+    if skip_inprogress:
+        inprogress_glob = os.path.join(pangenome_dir, 'tmp', str(taxid)) + '.*'
+        if glob.glob(inprogress_glob):
+            print(f"Taxid {taxid} in progress. Skipping.")
             return
     pan = pangenome(fasta_list, pangenome_dir, taxid)
     pan.create_pangenome(max_identity_pct=90, max_length_pct=70,
@@ -164,10 +170,13 @@ if __name__ == '__main__':
         'pangenomes and temporary files.'))
     parser.add_argument('threads', type=int,
         help='Parallel processing threads.')
+    parser.add_argument('--skip_done', action="store_true", default=False)
+    parser.add_argument('--skip_inprogress', action="store_true",
+        default=False)
     args = parser.parse_args()
     metadata = pd.read_csv(args.metadata_file, sep='\t')
     meta_group = metadata.groupby('species_taxid')
     p = Pool(args.threads)
-    p.map(partial(build_pangenome, pangenome_dir=args.pangenome_dir), meta_group)
-    p.close()
-    p.join()
+    p.map(partial(build_pangenome, pangenome_dir=args.pangenome_dir,
+        skip_done=args.skip_done, skip_inprogress=args.skip_inprogress),
+        meta_group)
